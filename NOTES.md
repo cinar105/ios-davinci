@@ -1,5 +1,14 @@
 # iOS 16 on sweet (Redmi Note 10 Pro, SM7150) - working notes
 
+## Active handoff — 2026-11-18: Davinci Adreno 618
+
+- User has previously booted this iOS 16 port on a Xiaomi Mi 9T (`davinci`) and wants to work on GPU acceleration after installation. Treat successful boot as user-confirmed; do not restart the install walkthrough.
+- Working branch: `codex/davinci-adreno618-bringup` (local review clone). No phone flashing or userdata changes have been made in this task.
+- First code milestone is probe-only: `tools/mkadt.py` now publishes the SM6150 GPU node (physical base `0x05000000`, size `0x90000`, chip ID `0x06010200`); patch `0084-davinci-adreno-probe.patch` adds an XNU IOKit service that only confirms the DeviceTree nub reaches IOKit. It must not map/read registers, change power/clock state, start GMU or advertise a Metal accelerator yet.
+- Hardware reference: LineageOS `android_kernel_xiaomi_sm6150`, branch `lineage-23.2`, sparse checkout at `/root/src/sm6150-kernel`; `sm6150-gpu.dtsi` and `drivers/gpu/msm/adreno-gpulist.h` identify the A618 resources. This Linux KGSL code is reference material, not drop-in XNU code.
+- Current verification: generated and dumped the high-memory ADT; the new `/arm-io/gpu` node appears with register offset `0x04000000` (translated by `ranges` to physical `0x05000000`) and chip ID `0x06010200`. `tools/validate-repo.py` passes (84 contiguous patches, 15 Python tools, 7 shell scripts). The new patch's unified-diff syntax was smoke-checked. No XNU build or device boot has been run yet.
+- Next: validate the patch against XNU 8796/build workflow, then have the user boot the probe image and confirm the `SWEET GPU` log before any register or power sequencing work. Keep `userdata` and calibration partitions untouched.
+
 ## Agent handoff / active work (2026-10-15, latest)
 
 ### >>> UPDATE 2026-10-18 (read first, then the 10-17 handoff below) <<<

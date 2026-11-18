@@ -1,0 +1,54 @@
+--- a/iokit/conf/files.arm64
++++ b/iokit/conf/files.arm64
+@@ -14,1 +14,2 @@
+ iokit/Kernel/arm/SweetKeyStore.cpp                               optional iokitcpp
++iokit/Kernel/arm/SweetAdrenoProbe.cpp                            optional iokitcpp
+--- a/iokit/KernelConfigTables.cpp
++++ b/iokit/KernelConfigTables.cpp
+@@ -57,3 +57,9 @@
+     "     'IOMatchCategory' = IOWatchdog;"
+     "   },"
++    "   {"
++    "     'IOClass'         = SweetAdrenoProbe;"
++    "     'IOProviderClass' = IOPlatformDevice;"
++    "     'IONameMatch'     = 'gpu';"
++    "     'IOProbeScore'    = 10000:32;"
++    "   },"
+ #endif
+--- /dev/null
++++ b/iokit/Kernel/arm/SweetAdrenoProbe.cpp
+@@ -0,0 +1,34 @@
++/*
++ * Read-only first-stage probe for the Davinci Adreno 618.
++ *
++ * This only confirms that the GPU's DeviceTree nub reaches IOKit. It does
++ * not map or read GPU registers, change clocks or regulators, start the GMU,
++ * load firmware, or advertise an IOAcceleratorES/Metal device.
++ */
++#include <pexpert/arm64/board_config.h>
++
++#if defined(SWEET)
++#include <IOKit/IOService.h>
++#include <IOKit/IOLib.h>
++
++class SweetAdrenoProbe : public IOService {
++	OSDeclareDefaultStructors(SweetAdrenoProbe);
++
++public:
++	bool start(IOService *provider) APPLE_KEXT_OVERRIDE;
++};
++
++OSDefineMetaClassAndStructors(SweetAdrenoProbe, IOService);
++
++bool
++SweetAdrenoProbe::start(IOService *provider)
++{
++	if (!IOService::start(provider)) {
++		return false;
++	}
++	IOLog("SWEET GPU: Adreno 618 DeviceTree nub detected (%s); probe-only, hardware untouched\n",
++	    provider != NULL ? provider->getName() : "no provider");
++	registerService();
++	return true;
++}
++#endif /* SWEET */

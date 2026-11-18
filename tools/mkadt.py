@@ -33,6 +33,12 @@ SWEET_ECID = 0x5357454554000001  # 'SWEET' + 1, synthetic
 FB_W, FB_H, FB_STRIDE = 1080, 2340, 1080 * 4
 # Internal UFS host (ufshc@1d84000 "ufs_mem"); QEMU virt has none
 UFS, UFS_SIZE = 0x01d84000, 0x3000
+# Davinci SM6150 / Adreno 618 resources from the matching SM6150 Linux DT.
+# `arm-io/ranges` maps child address 0x04000000 to physical 0x05000000.
+# This publishes metadata only; the initial XNU probe must not touch GPU MMIO,
+# clocks, regulators, GMU or firmware until those paths are implemented.
+GPU, GPU_SIZE = 0x05000000, 0x90000
+GPU_CHIPID = 0x06010200
 TIMEBASE = 19200000
 VTIMER_INTID = 19
 # QEMU virt (-M virt,gic-version=3 -cpu cortex-a76): GICD/GICR and the generic timer's CNTFRQ
@@ -187,6 +193,16 @@ def build(seed=None, qemu=False, highmem=False):
             ('compatible', cstr('sweet,display')),
             ('canvas-width', u32(1125)),
             ('canvas-height', u32(2436)),
+        ]),
+        # First Adreno bring-up milestone: expose the Davinci GPU node to
+        # IOPlatformDevice. The probe service only reports these properties;
+        # it deliberately does not map or access the power-gated registers.
+        node('gpu', [
+            ph(),
+            ('compatible', cstr('qcom,kgsl-3d0') + cstr('qcom,kgsl-3d')),
+            ('reg', u64(GPU - SOC_BASE, GPU_SIZE)),
+            ('reg-names', cstr('kgsl_3d0_reg_memory')),
+            ('qcom,chipid', u32(GPU_CHIPID)),
         ])])
 
     fbcon = node('sweet-fbcon', [
